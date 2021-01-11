@@ -24,19 +24,24 @@ using System;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+// using Azure.Data.Tables;
+// using Azure.Storage.
 
 namespace ImageFunctions
 {
     public static class Thumbnail
     {
         private static readonly string BLOB_STORAGE_CONNECTION_STRING = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
-
+        
         private static string GetBlobNameFromUrl(string bloblUrl)
         {
             var uri = new Uri(bloblUrl);
             var blobClient = new BlobClient(uri);
             return blobClient.Name;
         }
+
+
+
 
         [FunctionName("Thumbnail")]
         public static async Task Run(
@@ -50,21 +55,38 @@ namespace ImageFunctions
                 {
                     var createdEvent = ((JObject)eventGridEvent.Data).ToObject<StorageBlobCreatedEventData>();
                     var extension = Path.GetExtension(createdEvent.Url);
-                    // var encoder = GetEncoder(extension);
 
-                    if (true)
-                    {
-                        var thumbContainerName = Environment.GetEnvironmentVariable("THUMBNAIL_CONTAINER_NAME");
-                        var blobServiceClient = new BlobServiceClient(BLOB_STORAGE_CONNECTION_STRING);
-                        var blobContainerClient = blobServiceClient.GetBlobContainerClient(thumbContainerName);
-                        var blobName = GetBlobNameFromUrl(createdEvent.Url);
+                    var thumbContainerName = Environment.GetEnvironmentVariable("THUMBNAIL_CONTAINER_NAME");
+                    var blobServiceClient = new BlobServiceClient(BLOB_STORAGE_CONNECTION_STRING);
+                    var blobContainerClient = blobServiceClient.GetBlobContainerClient(thumbContainerName);
+                    var blobName = GetBlobNameFromUrl(createdEvent.Url);
 
-                        await blobContainerClient.UploadBlobAsync(blobName, input);
-                    }
-                    else
+                    await blobContainerClient.UploadBlobAsync(blobName, input);
+
+
+                    // create Short (AKA) URL
+                    var tmp_short_url = "http://aka.file1";
+                    
+                    //Store URL in Azure Tables
+                    //init table storage
+                    var table = TableService.GetTableReference(BLOB_STORAGE_CONNECTION_STRING, "ShortLinks");
+                    if (table == null)
                     {
-                        log.LogInformation($"No encoder support for: {createdEvent.Url}");
+                        log.LogInformation($"table null: {createdEvent.Url}");
+                        throw new ArgumentNullException(nameof(table));
                     }
+                    LinkEntity newlink = new LinkEntity()
+                                {
+                                    PartitionKey = blobName,
+                                    RowKey = blobName,
+                                    ShareFileName = blobName,
+                                    ShortLink = tmp_short_url,
+                                    SASLink = createdEvent.Url,
+                                };
+                    
+                    TableService.AddObject(table, newlink);
+
+              
                 }
             }
             catch (Exception ex)
