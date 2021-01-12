@@ -2,6 +2,9 @@
   "IsEncrypted": false,
   "Values": {
     "AzureWebJobsStorage": "<STORAGE_ACCOUNT_CONNECTION_STRING>",
+    "AzureWebJobsStorageName": "<STORAGE_ACCOUNT_NAME>",
+    "AzureWebJobsStorageKey":"<STORAGE_ACCOUNT_KEY>",
+    "AzureWebJobsStorageSASTokenLenghtHours": "72",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet",
     "THUMBNAIL_CONTAINER_NAME": "thumbnails",
     "THUMBNAIL_WIDTH": "100",
